@@ -300,3 +300,258 @@ def plot_activities(csv_path, output_pie_path=None, output_timeline_path=None,
         print(f'Saved timeline to: {output_timeline_path}')
 
     return pie_fig, timeline_fig, timeline_ax
+
+
+def plot_did_we_events_2025(csv_path='2025DataCollection.csv', output_path=None, figsize=(15, 6)):
+    """
+    Create pie charts for "Did we ..." events from 2025 data format.
+
+    Shows proportion of days with vs without each event.
+    Uses percentages for all events except crying (shows raw counts).
+    Includes exercise events since they're tracked the same for both people.
+    Displays in 2 rows for better layout.
+
+    Args:
+        csv_path: Path to 2025 data CSV file
+        output_path: Optional path to save figure
+        figsize: Figure size tuple (default: (15, 6))
+
+    Returns:
+        matplotlib.figure.Figure: The created figure
+    """
+    # Load data
+    df = pd.read_csv(csv_path)
+
+    # Parse the "Did we ..." column to extract individual events
+    events_col = 'Did we ...'
+
+    # Parse exercise column
+    exercise_col = 'Exercise '
+    df['exercise_raw'] = df[exercise_col].fillna('')
+    df['had_any_exercise'] = df['exercise_raw'].str.strip() != ''
+    df['had_cardio'] = df['exercise_raw'].str.contains('Cardio', case=False, regex=False)
+    df['had_strength'] = df['exercise_raw'].str.contains('Strength', case=False, regex=False)
+
+    # Create binary columns for each event type
+    events = [
+        ('laugh', 'Laugh'),
+        ('cry', 'Cry'),
+        ('fight', 'Fight'),
+        ('tender', 'Tender Moment'),
+        ('spend', 'Spend Money'),
+        ('had_any_exercise', 'Any Exercise'),
+        ('had_cardio', 'Cardio'),
+        ('had_strength', 'Strength')
+    ]
+
+    event_data = {}
+    for keyword, display_name in events:
+        # For exercise events, use the already-created boolean columns
+        if keyword.startswith('had_'):
+            had_event = df[keyword]
+        else:
+            # For "Did we ..." events, parse from the text column
+            had_event = df[events_col].fillna('').str.contains(keyword, case=False, regex=False)
+
+        yes_count = had_event.sum()
+        no_count = (~had_event).sum()
+        event_data[display_name] = {
+            'yes': yes_count,
+            'no': no_count,
+            'keyword': keyword
+        }
+
+    # Create figure with 2 rows
+    n_cols = 4  # 4 charts per row
+    n_rows = 2
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=figsize)
+
+    # Color scheme
+    yes_color = '#287521'  # Green
+    no_color = '#DF0001'   # Red
+
+    for idx, (display_name, data) in enumerate(event_data.items()):
+        row = idx // n_cols
+        col = idx % n_cols
+        ax = axes[row, col]
+
+        yes_count = data['yes']
+        no_count = data['no']
+        total = yes_count + no_count
+
+        # For crying, use raw counts; for others use percentages
+        if data['keyword'] == 'cry':
+            # Show raw counts for crying
+            labels = [f'Yes: {yes_count}', f'No: {no_count}']
+            autopct = ''
+        else:
+            # Show percentages for other events
+            yes_pct = (yes_count / total * 100) if total > 0 else 0
+            no_pct = (no_count / total * 100) if total > 0 else 0
+            labels = [f'Yes: {yes_pct:.1f}%', f'No: {no_pct:.1f}%']
+            autopct = ''
+
+        # Create pie chart
+        wedges, texts = ax.pie(
+            [yes_count, no_count],
+            labels=labels,
+            colors=[yes_color, no_color],
+            startangle=90,
+            textprops={'fontsize': 9}
+        )
+
+        # Add title
+        ax.set_title(display_name, fontsize=11, pad=10, fontweight='bold')
+
+    # Adjust layout
+    plt.tight_layout()
+
+    # Save if output path provided
+    if output_path:
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        print(f'✓ Saved pie charts to: {output_path}')
+
+    return fig
+
+
+def plot_person_specific_events_2025(csv_path='2025DataCollection.csv',
+                                      output_path_michael=None,
+                                      output_path_melanie=None,
+                                      figsize=(9, 4)):
+    """
+    Create person-specific pie charts for individual activities from 2025 data.
+
+    Creates two separate figures: one for Michael, one for Melanie.
+    Shows proportion of days with vs without each activity.
+    Exercise events are in the combined chart since they're tracked the same for both.
+
+    Args:
+        csv_path: Path to 2025 data CSV file
+        output_path_michael: Optional path to save Michael's figure
+        output_path_melanie: Optional path to save Melanie's figure
+        figsize: Figure size tuple (default: (9, 4))
+
+    Returns:
+        tuple: (michael_fig, melanie_fig)
+    """
+    # Load data
+    df = pd.read_csv(csv_path)
+
+    # Parse exercise column
+    exercise_col = 'Exercise '
+    df['exercise_raw'] = df[exercise_col].fillna('')
+    df['had_any_exercise'] = df['exercise_raw'].str.strip() != ''
+    df['had_cardio'] = df['exercise_raw'].str.contains('Cardio', case=False, regex=False)
+    df['had_strength'] = df['exercise_raw'].str.contains('Strength', case=False, regex=False)
+
+    # Parse reading and TV columns
+    read_col = 'Did you read a book today?'
+    tv_col = 'Did you watch TV today?'
+    fruit_veg_col = 'Fruit / Vegetable Consumption'
+
+    df['read_raw'] = df[read_col].fillna('')
+    df['tv_raw'] = df[tv_col].fillna('')
+    df['fruit_veg_raw'] = df[fruit_veg_col].fillna('')
+
+    # Create person-specific binary columns
+    df['michael_read'] = (df['read_raw'].str.contains('Michael', case=False) |
+                          df['read_raw'].str.contains('Both Yes', case=False))
+    df['melanie_read'] = (df['read_raw'].str.contains('Mel', case=False) |
+                          df['read_raw'].str.contains('Both Yes', case=False))
+
+    df['michael_tv'] = (df['tv_raw'].str.contains('Michael', case=False) |
+                        df['tv_raw'].str.contains('Both Yes', case=False))
+    df['melanie_tv'] = (df['tv_raw'].str.contains('Mel', case=False) |
+                        df['tv_raw'].str.contains('Both Yes', case=False))
+
+    df['michael_fruit_veg'] = df['fruit_veg_raw'].str.contains('Michael', case=False)
+    df['melanie_fruit_veg'] = df['fruit_veg_raw'].str.contains('Melanie', case=False)
+
+    # Define events to plot (column_name, display_name)
+    michael_events = [
+        ('michael_read', 'Reading'),
+        ('michael_tv', 'TV'),
+        ('michael_fruit_veg', 'Fruit/Veggie')
+    ]
+
+    melanie_events = [
+        ('melanie_read', 'Reading'),
+        ('melanie_tv', 'TV'),
+        ('melanie_fruit_veg', 'Fruit/Veggie')
+    ]
+
+    # Color scheme
+    yes_color = '#287521'  # Green
+    no_color = '#DF0001'   # Red
+
+    # Create Michael's figure
+    fig_michael, axes_michael = plt.subplots(1, len(michael_events), figsize=figsize)
+
+    for idx, (col_name, display_name) in enumerate(michael_events):
+        ax = axes_michael[idx]
+
+        yes_count = df[col_name].sum()
+        no_count = (~df[col_name]).sum()
+        total = yes_count + no_count
+
+        yes_pct = (yes_count / total * 100) if total > 0 else 0
+        no_pct = (no_count / total * 100) if total > 0 else 0
+
+        labels = [f'Yes: {yes_pct:.1f}%', f'No: {no_pct:.1f}%']
+
+        # Create pie chart
+        wedges, texts = ax.pie(
+            [yes_count, no_count],
+            labels=labels,
+            colors=[yes_color, no_color],
+            startangle=90,
+            textprops={'fontsize': 9}
+        )
+
+        # Add title
+        ax.set_title(display_name, fontsize=11, pad=10, fontweight='bold')
+
+    # Add overall title for Michael
+    fig_michael.suptitle('Michael - Activity Summary', fontsize=14, fontweight='bold', y=1.05)
+    plt.tight_layout()
+
+    if output_path_michael:
+        fig_michael.savefig(output_path_michael, dpi=300, bbox_inches='tight')
+        print(f'✓ Saved Michael\'s pie charts to: {output_path_michael}')
+
+    # Create Melanie's figure
+    fig_melanie, axes_melanie = plt.subplots(1, len(melanie_events), figsize=figsize)
+
+    for idx, (col_name, display_name) in enumerate(melanie_events):
+        ax = axes_melanie[idx]
+
+        yes_count = df[col_name].sum()
+        no_count = (~df[col_name]).sum()
+        total = yes_count + no_count
+
+        yes_pct = (yes_count / total * 100) if total > 0 else 0
+        no_pct = (no_count / total * 100) if total > 0 else 0
+
+        labels = [f'Yes: {yes_pct:.1f}%', f'No: {no_pct:.1f}%']
+
+        # Create pie chart
+        wedges, texts = ax.pie(
+            [yes_count, no_count],
+            labels=labels,
+            colors=[yes_color, no_color],
+            startangle=90,
+            textprops={'fontsize': 9}
+        )
+
+        # Add title
+        ax.set_title(display_name, fontsize=11, pad=10, fontweight='bold')
+
+    # Add overall title for Melanie
+    fig_melanie.suptitle('Melanie - Activity Summary', fontsize=14, fontweight='bold', y=1.05)
+    plt.tight_layout()
+
+    if output_path_melanie:
+        fig_melanie.savefig(output_path_melanie, dpi=300, bbox_inches='tight')
+        print(f'✓ Saved Melanie\'s pie charts to: {output_path_melanie}')
+
+    return fig_michael, fig_melanie

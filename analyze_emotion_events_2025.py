@@ -22,6 +22,60 @@ def load_and_parse_2025_data(csv_path='2025DataCollection.csv'):
     df['had_tender'] = df[events_col].fillna('').str.contains('tender', case=False, regex=False)
     df['had_spend_money'] = df[events_col].fillna('').str.contains('spend', case=False, regex=False)
 
+    # Parse the "Exercise " column (note: has trailing space in column name)
+    exercise_col = 'Exercise '
+    df['exercise_raw'] = df[exercise_col].fillna('')
+
+    # Create exercise binary columns
+    df['had_any_exercise'] = df['exercise_raw'].str.strip() != ''
+    df['had_cardio'] = df['exercise_raw'].str.contains('Cardio', case=False, regex=False)
+    df['had_strength'] = df['exercise_raw'].str.contains('Strength', case=False, regex=False)
+
+    # Parse reading and TV columns (person-specific)
+    read_col = 'Did you read a book today?'
+    tv_col = 'Did you watch TV today?'
+    fruit_veg_col = 'Fruit / Vegetable Consumption'
+
+    df['read_raw'] = df[read_col].fillna('')
+    df['tv_raw'] = df[tv_col].fillna('')
+    df['fruit_veg_raw'] = df[fruit_veg_col].fillna('')
+
+    # Create person-specific binary columns
+    # Reading
+    df['michael_read'] = (df['read_raw'].str.contains('Michael', case=False) |
+                          df['read_raw'].str.contains('Both Yes', case=False))
+    df['melanie_read'] = (df['read_raw'].str.contains('Mel', case=False) |
+                          df['read_raw'].str.contains('Both Yes', case=False))
+
+    # TV
+    df['michael_tv'] = (df['tv_raw'].str.contains('Michael', case=False) |
+                        df['tv_raw'].str.contains('Both Yes', case=False))
+    df['melanie_tv'] = (df['tv_raw'].str.contains('Mel', case=False) |
+                        df['tv_raw'].str.contains('Both Yes', case=False))
+
+    # Fruit/Vegetables
+    df['michael_fruit_veg'] = df['fruit_veg_raw'].str.contains('Michael', case=False)
+    df['melanie_fruit_veg'] = df['fruit_veg_raw'].str.contains('Melanie', case=False)
+
+    # Parse Activities column
+    activities_col = 'Activities'
+    df['activities_raw'] = df[activities_col].fillna('')
+    df['had_any_activity'] = df['activities_raw'].str.strip() != ''
+
+    # Parse Social column (Family/Friends)
+    social_col = 'Social'
+    df['social_raw'] = df[social_col].fillna('')
+    df['had_family_or_friends'] = df['social_raw'].str.strip() != ''
+    df['had_family'] = df['social_raw'].str.contains('Family', case=False, regex=False)
+    df['had_friends'] = df['social_raw'].str.contains('Friends', case=False, regex=False)
+
+    # Parse Blood sugar reflection (1=bad, 2=medium, 3=good)
+    blood_sugar_col = 'Blood sugar reflection'
+    df['blood_sugar_numeric'] = pd.to_numeric(df[blood_sugar_col], errors='coerce')
+    df['had_bad_blood_sugar'] = df['blood_sugar_numeric'] == 1
+    df['had_medium_blood_sugar'] = df['blood_sugar_numeric'] == 2
+    df['had_good_blood_sugar'] = df['blood_sugar_numeric'] == 3
+
     # Get emotion scores
     df['michael_emotion'] = pd.to_numeric(df['Emotion - Michael'], errors='coerce')
     df['melanie_emotion'] = pd.to_numeric(df['Emotion - Melanie'], errors='coerce')
@@ -101,19 +155,37 @@ def main():
     print(f"Valid Michael emotions: {df['michael_emotion'].notna().sum()}")
     print(f"Valid Melanie emotions: {df['melanie_emotion'].notna().sum()}")
 
-    # Define events to analyze
-    events = [
+    # Define shared events (same for both people)
+    shared_events = [
         ('had_laugh', 'Laugh'),
         ('had_cry', 'Cry'),
         ('had_fight', 'Fight'),
         ('had_tender', 'Tender Moment'),
-        ('had_spend_money', 'Spend Money')
+        ('had_spend_money', 'Spend Money'),
+        ('had_any_exercise', 'Any Exercise'),
+        ('had_cardio', 'Cardio'),
+        ('had_strength', 'Strength Training'),
+        ('had_any_activity', 'Any Activity'),
+        ('had_family_or_friends', 'Family or Friends'),
+        ('had_family', 'Family'),
+        ('had_friends', 'Friends'),
+        ('had_bad_blood_sugar', 'Bad Blood Sugar'),
+        ('had_medium_blood_sugar', 'Medium Blood Sugar'),
+        ('had_good_blood_sugar', 'Good Blood Sugar')
+    ]
+
+    # Define person-specific events (different columns for each person)
+    person_specific_events = [
+        ('Read', 'michael_read', 'melanie_read'),
+        ('Watch TV', 'michael_tv', 'melanie_tv'),
+        ('Eat Fruit/Veg', 'michael_fruit_veg', 'melanie_fruit_veg')
     ]
 
     # Analyze for both people
     results = []
 
-    for event_col, event_name in events:
+    # Analyze shared events
+    for event_col, event_name in shared_events:
         # Michael
         result = analyze_event_emotion_association(
             df, 'Michael', 'michael_emotion', event_col, event_name
@@ -123,6 +195,20 @@ def main():
         # Melanie
         result = analyze_event_emotion_association(
             df, 'Melanie', 'melanie_emotion', event_col, event_name
+        )
+        results.append(result)
+
+    # Analyze person-specific events
+    for event_name, michael_col, melanie_col in person_specific_events:
+        # Michael
+        result = analyze_event_emotion_association(
+            df, 'Michael', 'michael_emotion', michael_col, event_name
+        )
+        results.append(result)
+
+        # Melanie
+        result = analyze_event_emotion_association(
+            df, 'Melanie', 'melanie_emotion', melanie_col, event_name
         )
         results.append(result)
 
@@ -157,8 +243,8 @@ def main():
     results_df['difference'] = results_df['difference'].round(2)
     results_df['cohens_d'] = results_df['cohens_d'].round(2)
 
-    # Sort by person then event
-    results_df = results_df.sort_values(['Person', 'Event'])
+    # Sort by event then person
+    results_df = results_df.sort_values(['Event', 'Person'])
 
     # Create output dataframe with formatted p-value and Bonferroni significance
     output_df = results_df[['Person', 'Event', 'p_value_formatted', 'significant_bonferroni',
@@ -176,7 +262,8 @@ def main():
 
     # Print summary statistics
     print(f"\nAnalyzed {len(df)} days of data")
-    print(f"Events analyzed: {len(events)}")
+    print(f"Shared events analyzed: {len(shared_events)}")
+    print(f"Person-specific events analyzed: {len(person_specific_events)}")
     print(f"Total comparisons: {num_comparisons}")
     print(f"\nUsing Welch's t-test (robust to unequal variances)")
     print(f"Minimum sample size per group: 3")
