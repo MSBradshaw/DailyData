@@ -34,6 +34,30 @@ Generate visualizations:
 python plot_2025_emotion.py
 ```
 
+## Word Cloud Generation
+
+### Creating Word Clouds from Exported Data
+
+1. **Generate word lists:**
+   ```bash
+   uv run python plot_2025_wordclouds.py
+   ```
+   This creates processed word lists:
+   - `2025_best_part_wordcloud.txt` - Best part of the day
+   - `2025_worst_part_wordcloud.txt` - Worst part of the day
+
+2. **Create word clouds using wordclouds.com:**
+   - Go to [www.wordclouds.com](https://www.wordclouds.com)
+   - Click "Word List" input mode
+   - Copy and paste the contents of the word list file
+   - Configure colors:
+     - **Best part of the day**: Green `#287521`
+     - **Worst part of the day**: Red `#DF0001`
+   - Adjust other settings as desired (shape, font, etc.)
+   - Generate and download the word cloud
+
+**Note:** The exported word lists use tildes (~) instead of spaces for multi-word phrases (e.g., "good~session"). This ensures phrases stay together in the word cloud.
+
 ## Statistical Analysis
 
 ### Event-Emotion Association Analysis

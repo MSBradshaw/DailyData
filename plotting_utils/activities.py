@@ -555,3 +555,264 @@ def plot_person_specific_events_2025(csv_path='2025DataCollection.csv',
         print(f'✓ Saved Melanie\'s pie charts to: {output_path_melanie}')
 
     return fig_michael, fig_melanie
+
+
+def create_2025_event_timeline(csv_path='2025DataCollection.csv',
+                               output_path=None,
+                               title="2025 Events & Activities Timeline",
+                               figsize=(20, 12)):
+    """
+    Create a timeline visualization for 2025 events and activities.
+
+    Shows when events occurred throughout the year, divided by person where relevant.
+
+    Args:
+        csv_path: Path to 2025 data CSV file
+        output_path: Optional path to save figure
+        title: Plot title (default: "2025 Events & Activities Timeline")
+        figsize: Figure size tuple (default: (20, 12))
+
+    Returns:
+        tuple: (fig, ax)
+    """
+    # Load and parse data
+    df = pd.read_csv(csv_path)
+
+    # Parse timestamp to date - strip timezone suffix first
+    df['Date'] = df['Timestamp'].astype(str).str.replace(r'\s+[A-Z]{3,4}$', '', regex=True)
+    df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+
+    # Parse "Did we ..." events
+    events_col = 'Did we ...'
+    df['had_laugh'] = df[events_col].fillna('').str.contains('laugh', case=False, regex=False)
+    df['had_cry'] = df[events_col].fillna('').str.contains('cry', case=False, regex=False)
+    df['had_fight'] = df[events_col].fillna('').str.contains('fight', case=False, regex=False)
+    df['had_tender'] = df[events_col].fillna('').str.contains('tender', case=False, regex=False)
+    df['had_spend_money'] = df[events_col].fillna('').str.contains('spend', case=False, regex=False)
+
+    # Parse exercise
+    exercise_col = 'Exercise '
+    df['exercise_raw'] = df[exercise_col].fillna('')
+    df['had_any_exercise'] = df['exercise_raw'].str.strip() != ''
+    df['had_cardio'] = df['exercise_raw'].str.contains('Cardio', case=False, regex=False)
+    df['had_strength'] = df['exercise_raw'].str.contains('Strength', case=False, regex=False)
+
+    # Parse reading and TV
+    read_col = 'Did you read a book today?'
+    tv_col = 'Did you watch TV today?'
+    fruit_veg_col = 'Fruit / Vegetable Consumption'
+
+    df['read_raw'] = df[read_col].fillna('')
+    df['tv_raw'] = df[tv_col].fillna('')
+    df['fruit_veg_raw'] = df[fruit_veg_col].fillna('')
+
+    df['michael_read'] = (df['read_raw'].str.contains('Michael', case=False) |
+                          df['read_raw'].str.contains('Both Yes', case=False))
+    df['melanie_read'] = (df['read_raw'].str.contains('Mel', case=False) |
+                          df['read_raw'].str.contains('Both Yes', case=False))
+
+    df['michael_tv'] = (df['tv_raw'].str.contains('Michael', case=False) |
+                        df['tv_raw'].str.contains('Both Yes', case=False))
+    df['melanie_tv'] = (df['tv_raw'].str.contains('Mel', case=False) |
+                        df['tv_raw'].str.contains('Both Yes', case=False))
+
+    df['michael_fruit_veg'] = df['fruit_veg_raw'].str.contains('Michael', case=False)
+    df['melanie_fruit_veg'] = df['fruit_veg_raw'].str.contains('Melanie', case=False)
+
+    # Parse activities
+    activities_col = 'Activities'
+    df['activities_raw'] = df[activities_col].fillna('')
+    df['had_any_activity'] = df['activities_raw'].str.strip() != ''
+
+    # Parse social
+    social_col = 'Social'
+    df['social_raw'] = df[social_col].fillna('')
+    df['had_family'] = df['social_raw'].str.contains('Family', case=False, regex=False)
+    df['had_friends'] = df['social_raw'].str.contains('Friends', case=False, regex=False)
+
+    # Parse emotion scores and calculate 7-day rolling average
+    df['michael_emotion'] = pd.to_numeric(df['Emotion - Michael'], errors='coerce')
+    df['melanie_emotion'] = pd.to_numeric(df['Emotion - Melanie'], errors='coerce')
+
+    # Sort by date for proper rolling calculation
+    df = df.sort_values('Date')
+
+    # Calculate 7-day rolling average (ignoring NaN values)
+    df['michael_emotion_7day'] = df['michael_emotion'].rolling(window=7, min_periods=1).mean()
+    df['melanie_emotion_7day'] = df['melanie_emotion'].rolling(window=7, min_periods=1).mean()
+
+    # Convert rolling averages to Z-scores
+    michael_mean = df['michael_emotion'].mean()
+    michael_std = df['michael_emotion'].std()
+    melanie_mean = df['melanie_emotion'].mean()
+    melanie_std = df['melanie_emotion'].std()
+
+    df['michael_emotion_7day_zscore'] = (df['michael_emotion_7day'] - michael_mean) / michael_std
+    df['melanie_emotion_7day_zscore'] = (df['melanie_emotion_7day'] - melanie_mean) / melanie_std
+
+    # Define timeline rows (column_name, display_name)
+    # Organized by category with person-specific rows
+    timeline_events = [
+        # Emotional events (shared)
+        ('had_laugh', 'Laugh'),
+        ('had_cry', 'Cry'),
+        ('had_fight', 'Fight'),
+        ('had_tender', 'Tender Moment'),
+        ('had_spend_money', 'Spend Money'),
+
+        # Exercise (shared)
+        ('had_any_exercise', 'Any Exercise'),
+        ('had_cardio', 'Cardio'),
+        ('had_strength', 'Strength'),
+
+        # Social (shared)
+        ('had_family', 'Family'),
+        ('had_friends', 'Friends'),
+
+        # Activities (shared)
+        ('had_any_activity', 'Any Activity'),
+
+        # Reading (by person)
+        ('michael_read', 'Reading - Michael'),
+        ('melanie_read', 'Reading - Melanie'),
+
+        # TV (by person)
+        ('michael_tv', 'TV - Michael'),
+        ('melanie_tv', 'TV - Melanie'),
+
+        # Fruit/Veg (by person)
+        ('michael_fruit_veg', 'Fruit/Veg - Michael'),
+        ('melanie_fruit_veg', 'Fruit/Veg - Melanie'),
+    ]
+
+    # Reverse for bottom-to-top display
+    timeline_events = timeline_events[::-1]
+
+    # Add emotion rolling average rows (will be at top after reverse)
+    num_event_rows = len(timeline_events)
+    emotion_row_start = num_event_rows
+
+    # Create figure
+    fig, ax = plt.subplots(figsize=figsize)
+
+    # Generate color palette for events
+    colors = sns.color_palette('husl', n_colors=len(timeline_events))
+
+    # Plot each event
+    for idx, ((col_name, display_name), color) in enumerate(zip(timeline_events, colors)):
+        # Get dates where event occurred
+        mask = df[col_name] == True
+        event_dates = df.loc[mask, 'Date']
+
+        if len(event_dates) > 0:
+            # Plot points for each occurrence with transparency for overplotting visibility
+            ax.scatter(event_dates,
+                      [idx] * len(event_dates),
+                      facecolor=color,
+                      edgecolor='white',
+                      label=display_name,
+                      s=30,
+                      marker='s',
+                      alpha=0.5,
+                      linewidth=0.5)
+
+            # Draw horizontal lines at each point
+            for date in event_dates:
+                ax.hlines(y=idx,
+                         xmin=date - pd.Timedelta(days=0.3),
+                         xmax=date + pd.Timedelta(days=0.3),
+                         color=color,
+                         linewidth=2,
+                         alpha=0.5)
+
+    # Plot 7-day emotion Z-score rolling averages at the top
+    melanie_row_idx = emotion_row_start
+    michael_row_idx = emotion_row_start + 1
+
+    # Filter out NaN values for plotting
+    melanie_data = df[df['melanie_emotion_7day_zscore'].notna()]
+    michael_data = df[df['michael_emotion_7day_zscore'].notna()]
+
+    # Plot Melanie's emotion Z-score line
+    # Map Z-score (-3 to +3 typical range) to row space, centered at 0.5
+    # Z=0 (average) -> row center, Z=+3 (great) -> top, Z=-3 (bad) -> bottom
+    melanie_y = melanie_row_idx + 0.5 + (melanie_data['melanie_emotion_7day_zscore'] / 6)
+    melanie_y = melanie_y.clip(melanie_row_idx, melanie_row_idx + 1)  # Clip to row bounds
+
+    # Use gradient coloring: green for positive Z, red for negative Z
+    ax.plot(melanie_data['Date'], melanie_y,
+            color='#FF69B4', linewidth=2.5, alpha=0.9, label='Melanie Emotion Z-score (7-day avg)')
+
+    # Fill above/below center line with different colors
+    center_line = melanie_row_idx + 0.5
+    ax.fill_between(melanie_data['Date'], center_line, melanie_y,
+                     where=(melanie_y >= center_line),
+                     color='#90EE90', alpha=0.3, interpolate=True)  # Green for above average
+    ax.fill_between(melanie_data['Date'], center_line, melanie_y,
+                     where=(melanie_y < center_line),
+                     color='#FFB6C6', alpha=0.3, interpolate=True)  # Light red for below average
+
+    # Plot Michael's emotion Z-score line
+    michael_y = michael_row_idx + 0.5 + (michael_data['michael_emotion_7day_zscore'] / 6)
+    michael_y = michael_y.clip(michael_row_idx, michael_row_idx + 1)  # Clip to row bounds
+
+    ax.plot(michael_data['Date'], michael_y,
+            color='#4169E1', linewidth=2.5, alpha=0.9, label='Michael Emotion Z-score (7-day avg)')
+
+    # Fill above/below center line with different colors
+    center_line = michael_row_idx + 0.5
+    ax.fill_between(michael_data['Date'], center_line, michael_y,
+                     where=(michael_y >= center_line),
+                     color='#90EE90', alpha=0.3, interpolate=True)  # Green for above average
+    ax.fill_between(michael_data['Date'], center_line, michael_y,
+                     where=(michael_y < center_line),
+                     color='#FFB6C6', alpha=0.3, interpolate=True)  # Light red for below average
+
+    # Draw center line (Z=0) for reference
+    ax.axhline(y=melanie_row_idx + 0.5, color='gray', linestyle='--', linewidth=0.8, alpha=0.5)
+    ax.axhline(y=michael_row_idx + 0.5, color='gray', linestyle='--', linewidth=0.8, alpha=0.5)
+
+    # Customize the plot
+    total_rows = len(timeline_events) + 2  # Events + 2 emotion rows
+    ax.set_ylim(-1, total_rows)
+
+    # Create y-axis labels (events + emotion rows)
+    event_labels = [name for _, name in timeline_events]
+    emotion_labels = ['Melanie Emotion Z-score (7-day avg)', 'Michael Emotion Z-score (7-day avg)']
+    all_labels = event_labels + emotion_labels
+
+    ax.set_yticks(range(total_rows))
+    ax.set_yticklabels(all_labels, fontsize=10)
+
+    # Format x-axis
+    ax.set_xlabel('Date', fontsize=12)
+    plt.xticks(rotation=45)
+
+    # Add vertical lines for each month
+    start_date = df['Date'].min()
+    end_date = df['Date'].max()
+    date_range = pd.date_range(start_date, end_date, freq='MS')  # Month start
+    for date in date_range:
+        ax.axvline(date, color='grey', linestyle='--', linewidth=0.5, alpha=0.5)
+
+    # Add grid
+    ax.grid(True, axis='x', color='lightgrey', alpha=0.3)
+    ax.set_facecolor('white')
+
+    # Remove top and right spines
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    # Add title
+    if title:
+        plt.title(title, pad=20, fontsize=16, fontweight='bold')
+
+    # Adjust layout
+    plt.tight_layout()
+
+    # Save if output path provided
+    if output_path:
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        print(f'✓ Saved timeline to: {output_path}')
+
+    return fig, ax

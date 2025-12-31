@@ -101,8 +101,14 @@ def process_text(texts, custom_replacements=None, custom_stops=None):
         if pd.isna(text):
             continue
 
-        # Convert to lowercase and remove possessives
+        # Convert to lowercase
         text = text.lower()
+
+        # Extract possessive forms and add both singular and plural versions
+        # Find all words with 's (e.g., "cat's" -> add both "cat" and "cats")
+        possessive_words = re.findall(r"\b(\w+)'s\b", text)
+
+        # Remove possessives from main text for normal processing
         text = re.sub(r"'s\b", "", text)
 
         # Remove punctuation
@@ -110,6 +116,10 @@ def process_text(texts, custom_replacements=None, custom_stops=None):
 
         # Tokenize
         tokens = word_tokenize(text)
+
+        # Add plural forms of possessive words to tokens
+        for word in possessive_words:
+            tokens.append(word + 's')  # Add plural form
 
         # Apply custom replacements
         for pattern, replacement in replacements.items():
