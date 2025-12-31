@@ -29,10 +29,18 @@ Thumbs.db
 *.pkl
 *.pyc
 
-# Year-specific outputs
+# Year-specific outputs (exclude docs/ outputs for GitHub Pages)
 2024/outputs/
 2025/outputs/
+!docs/2024/outputs/
+!docs/2025/outputs/
 
 # Data files (optional - uncomment to track data)
 # 2024/data/
 # 2025/data/
+
+# Archive
+archive/
+
+# Keep unencrypted HTML private
+docs/index.unencrypted.html

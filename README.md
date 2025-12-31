@@ -20,6 +20,9 @@ plotting_utils/          # Year-agnostic plotting library
 ├── outputs/            # Generated visualizations and analysis
 ├── plot_2025.py        # Consolidated plotting script
 └── analyze_emotion_events_2025.py  # Statistical analysis
+
+docs/
+└── index.html          # GitHub Pages website showcasing visualizations
 ```
 
 ## Setup
@@ -179,3 +182,23 @@ Results are saved to `2025_emotion_event_analysis.csv` with columns:
 - `avg_emotion_negative`: Average emotion score on days without event
 - `difference`: Mean difference (positive - negative)
 - `cohens_d`: Effect size (standardized mean difference)
+
+## GitHub Pages Website
+
+A static website showcasing all visualizations is available in the `docs/` directory.
+
+**To enable GitHub Pages:**
+1. Go to your repository settings on GitHub
+2. Navigate to "Pages" section
+3. Set source to "Deploy from a branch"
+4. Select branch: `main` and folder: `/docs`
+5. Save and wait for deployment
+
+The site will be available at: `https://<username>.github.io/<repository>/`
+
+**Website features:**
+- Clean, modern design with responsive layout
+- All 2025 and 2024 visualizations displayed
+- Organized by year and category (emotion, timeline, activities)
+- Placeholder descriptions for each visualization (ready for customization)
+- Automatic dark/light theme based on browser preference
