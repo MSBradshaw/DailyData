@@ -4,13 +4,23 @@ Personal data tracking and visualization project for daily life metrics.
 
 ## Project Structure
 
-- `plotting_utils/` - Year-agnostic plotting library
-  - `emotion.py` - Emotion calendar heatmaps
-  - `activities.py` - Activity pie charts and timelines
-  - `wordcloud_processing.py` - Text processing for word clouds
+```
+plotting_utils/          # Year-agnostic plotting library
+├── emotion.py          # Emotion calendar heatmaps
+├── activities.py       # Activity pie charts and timelines
+└── wordcloud_processing.py  # Text processing for word clouds
 
-- `2024/` - 2024 data and analysis
-- `2025/` - 2025 data and analysis
+2024/
+├── data/               # 2024 data files
+├── outputs/            # Generated visualizations and analysis
+└── plot_2024.py        # Consolidated plotting script
+
+2025/
+├── data/               # 2025 data files
+├── outputs/            # Generated visualizations and analysis
+├── plot_2025.py        # Consolidated plotting script
+└── analyze_emotion_events_2025.py  # Statistical analysis
+```
 
 ## Setup
 
@@ -22,41 +32,88 @@ uv sync
 
 ## Usage
 
-Activate the virtual environment:
+### Generate All Visualizations
 
+**For 2025 data:**
 ```bash
-source .venv/bin/activate
+cd 2025
+uv run python plot_2025.py
 ```
 
-Generate visualizations:
-
+**For 2024 data:**
 ```bash
-python plot_2025_emotion.py
+cd 2024
+uv run python plot_2024.py
 ```
 
-## Word Cloud Generation
+### Run Statistical Analysis
 
-### Creating Word Clouds from Exported Data
+**2025 event-emotion associations:**
+```bash
+cd 2025
+uv run python analyze_emotion_events_2025.py
+```
 
-1. **Generate word lists:**
-   ```bash
-   uv run python plot_2025_wordclouds.py
-   ```
-   This creates processed word lists:
-   - `2025_best_part_wordcloud.txt` - Best part of the day
-   - `2025_worst_part_wordcloud.txt` - Worst part of the day
+All outputs will be saved to the respective `outputs/` directory.
 
-2. **Create word clouds using wordclouds.com:**
-   - Go to [www.wordclouds.com](https://www.wordclouds.com)
-   - Click "Word List" input mode
-   - Copy and paste the contents of the word list file
-   - Configure colors:
-     - **Best part of the day**: Green `#287521`
-     - **Worst part of the day**: Red `#DF0001`
-   - Adjust other settings as desired (shape, font, etc.)
-   - Generate and download the word cloud
+## Visualizations Generated
 
-**Note:** The exported word lists use tildes (~) instead of spaces for multi-word phrases (e.g., "good~session"). This ensures phrases stay together in the word cloud.
+The consolidated plotting scripts generate the following visualizations:
+
+### File Naming Convention
+
+All outputs follow the pattern: `<type>_<subject>_<person>.<ext>`
+- **person**: `together` (both people), `michael`, or `melanie`
+- **type**: `calendar`, `pie`, `wordcloud`, `timeline`, `analysis`, `weekday`
+- **subject**: `emotion`, `events`, `activities`, `best`, `worst`
+
+### 2025 Outputs
+
+**Emotion Calendars:**
+- `calendar_emotion_together.png` - Raw emotion scores
+- `calendar_emotion_together_zscore.png` - Z-score normalized emotions
+- `weekday_emotion_together.csv` - Weekday statistics
+- `weekday_emotion_heatmap_together.png` - Weekday patterns
+
+**Pie Charts:**
+- `pie_events_together.png` - Shared events (Laugh, Cry, Fight, etc.)
+- `pie_activities_michael.png` - Michael's activities
+- `pie_activities_melanie.png` - Melanie's activities
+
+**Timeline:**
+- `timeline_events_together.png` - Event timeline with emotion trends
+  - Event markers with overplotting visibility
+  - 7-day rolling average emotion Z-scores
+  - Person-specific activity rows
+  - Monthly grid lines
+
+**Word Cloud Data:**
+- `wordcloud_best_together.txt` - Best part of day (for wordclouds.com)
+- `wordcloud_worst_together.txt` - Worst part of day (for wordclouds.com)
+
+**Statistical Analysis:**
+- `analysis_emotion_events_together.csv` - Event-emotion associations
+
+### 2024 Outputs
+
+**Emotion Calendars:**
+- `calendar_emotion_together.png` - Raw emotion scores
+- `calendar_emotion_together_zscore.png` - Z-score normalized emotions
+- `weekday_emotion_together.csv` - Weekday statistics
+- `weekday_emotion_heatmap_together.png` - Weekday patterns
+
+## Word Cloud Creation
+
+The word cloud data files can be used with [www.wordclouds.com](https://www.wordclouds.com):
+
+1. Click "Word List" input mode
+2. Copy and paste the contents of the word list file
+3. Configure colors:
+   - **Best part**: Green `#287521`
+   - **Worst part**: Red `#DF0001`
+4. Generate and download
+
+**Note:** Word lists use tildes (~) for multi-word phrases (e.g., "good~session").
 
 ## Statistical Analysis
 

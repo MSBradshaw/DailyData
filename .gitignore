@@ -28,3 +28,11 @@ Thumbs.db
 # Project specific
 *.pkl
 *.pyc
+
+# Year-specific outputs
+2024/outputs/
+2025/outputs/
+
+# Data files (optional - uncomment to track data)
+# 2024/data/
+# 2025/data/
