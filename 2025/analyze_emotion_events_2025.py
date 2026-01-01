@@ -6,9 +6,14 @@ and emotion scores for 2025 data.
 import pandas as pd
 import numpy as np
 from scipy import stats
+from pathlib import Path
 
-def load_and_parse_2025_data(csv_path='data/2025DataCollection.csv'):
+def load_and_parse_2025_data(csv_path=None):
     """Load 2025 data and parse events."""
+    if csv_path is None:
+        # Use path relative to this script's location
+        script_dir = Path(__file__).parent
+        csv_path = script_dir / 'data' / '2025DataCollection.csv'
     df = pd.read_csv(csv_path)
 
     # Parse the "Did we ..." column to extract individual events
@@ -256,7 +261,8 @@ def main():
                         'avg_emotion_positive', 'avg_emotion_negative', 'difference', 'cohens_d']
 
     # Save to CSV
-    output_file = 'outputs/analysis_emotion_events_together.csv'
+    script_dir = Path(__file__).parent
+    output_file = script_dir / 'outputs' / 'analysis_emotion_events_together.csv'
     output_df.to_csv(output_file, index=False)
     print(f"✓ Analysis saved to: {output_file}")
 

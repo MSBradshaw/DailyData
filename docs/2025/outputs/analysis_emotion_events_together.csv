@@ -1,0 +1,37 @@
+Person,Event,p_value,significant_bonferroni,num_positive,num_negative,balance_ratio,avg_emotion_positive,avg_emotion_negative,difference,cohens_d
+Melanie,Any Activity,0.0004,True,145,208,0.7,7.53,7.11,0.43,0.4
+Michael,Any Activity,0.0039,False,147,208,0.71,7.44,7.06,0.38,0.31
+Melanie,Any Exercise,0.2286,False,224,129,0.58,7.23,7.37,-0.14,-0.13
+Michael,Any Exercise,0.0797,False,227,128,0.56,7.13,7.38,-0.24,-0.2
+Melanie,Bad Blood Sugar,0.7548,False,115,238,0.48,7.25,7.29,-0.04,-0.04
+Michael,Bad Blood Sugar,0.1299,False,116,239,0.49,7.07,7.29,-0.22,-0.18
+Melanie,Cardio,0.8348,False,142,211,0.67,7.3,7.27,0.03,0.02
+Michael,Cardio,0.7414,False,145,210,0.69,7.19,7.24,-0.04,-0.04
+Melanie,Cry,7.67e-05,True,31,322,0.1,5.97,7.41,-1.44,-1.42
+Michael,Cry,0.0052,False,31,324,0.1,6.45,7.29,-0.84,-0.69
+Melanie,Eat Fruit/Veg,0.9126,False,327,26,0.08,7.28,7.31,-0.03,-0.03
+Michael,Eat Fruit/Veg,0.5035,False,319,36,0.11,7.21,7.33,-0.13,-0.1
+Melanie,Family,2.47e-07,True,92,261,0.35,7.76,7.11,0.65,0.61
+Michael,Family,4.05e-05,True,94,261,0.36,7.67,7.06,0.61,0.5
+Melanie,Family or Friends,8.48e-06,True,198,155,0.78,7.51,6.99,0.52,0.49
+Michael,Family or Friends,3.04e-07,True,200,155,0.78,7.52,6.84,0.68,0.56
+Melanie,Fight,0.0010,True,25,328,0.08,6.04,7.38,-1.34,-1.28
+Michael,Fight,0.0013,True,25,330,0.08,6.16,7.3,-1.14,-0.94
+Melanie,Friends,0.2570,False,126,227,0.56,7.37,7.23,0.13,0.12
+Michael,Friends,0.0493,False,126,229,0.55,7.39,7.13,0.26,0.21
+Melanie,Good Blood Sugar,0.2776,False,104,249,0.42,7.38,7.24,0.13,0.12
+Michael,Good Blood Sugar,0.1814,False,104,251,0.41,7.36,7.16,0.19,0.15
+Melanie,Laugh,4.19e-06,True,304,49,0.16,7.45,6.24,1.2,1.19
+Michael,Laugh,2.56e-05,True,304,51,0.17,7.36,6.41,0.94,0.79
+Melanie,Medium Blood Sugar,0.4347,False,130,223,0.58,7.22,7.31,-0.09,-0.08
+Michael,Medium Blood Sugar,0.9120,False,131,224,0.58,7.23,7.21,0.01,0.01
+Melanie,Read,1.62e-05,True,208,145,0.7,7.07,7.58,-0.51,-0.48
+Michael,Read,0.0170,False,177,178,0.99,7.06,7.38,-0.31,-0.25
+Melanie,Spend Money,0.0123,False,237,116,0.49,7.38,7.07,0.32,0.29
+Michael,Spend Money,0.0006,True,237,118,0.5,7.38,6.9,0.48,0.39
+Melanie,Strength Training,0.0227,False,107,246,0.43,7.08,7.37,-0.28,-0.26
+Michael,Strength Training,0.0088,False,107,248,0.43,6.96,7.33,-0.37,-0.3
+Melanie,Tender Moment,0.0448,False,273,80,0.29,7.35,7.04,0.31,0.29
+Michael,Tender Moment,0.0432,False,273,82,0.3,7.3,6.95,0.35,0.28
+Melanie,Watch TV,0.9626,False,173,180,0.96,7.28,7.28,0.01,0.0
+Michael,Watch TV,0.5013,False,149,206,0.72,7.17,7.26,-0.09,-0.07

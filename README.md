@@ -126,33 +126,12 @@ The `analyze_emotion_events_2025.py` script analyzes associations between daily 
 
 #### Statistical Testing Methodology
 
-**Test Selection: Welch's t-test**
-- Uses Welch's t-test (two-sample t-test with unequal variances)
-- Does not assume equal variances between groups
-- Robust to imbalanced datasets (e.g., 4 "cry" events vs. 200 "no cry" events)
-- Implemented via `scipy.stats.ttest_ind(equal_var=False)`
+The analysis uses Welch's t-test to compare emotion scores between days with and without specific events. Key features:
 
-**Sample Size Requirements**
-- Minimum 3 observations per group required for statistical testing
-- Tests with insufficient data return `NaN` for p-values
-- Prevents unreliable results from very small samples
-
-**Effect Size: Cohen's d**
-- Reports standardized mean difference (Cohen's d)
-- Independent of sample size, allows comparison across different events
-- Interpretation: small (0.2), medium (0.5), large (0.8)
-- Calculated using pooled standard deviation
-
-**Multiple Comparison Correction: Bonferroni**
-- Corrects for multiple hypothesis testing to control family-wise error rate
-- Threshold: p < 0.05 / n_comparisons
-- Currently analyzing 36 comparisons (15 shared events × 2 people + 3 person-specific events × 2 people)
-- Bonferroni threshold: p < 0.0014
-
-**Balance Ratio**
-- Reports min(n_positive, n_negative) / max(n_positive, n_negative)
-- Indicates how balanced the groups are (1.0 = perfectly balanced, 0.0 = highly imbalanced)
-- Helps interpret results in context of data distribution
+- **Statistical test**: Welch's t-test (handles unequal variances and imbalanced datasets)
+- **Effect size**: Cohen's d for standardized comparison across events
+- **Multiple comparison correction**: Bonferroni correction (threshold: p < 0.0014 for 36 comparisons)
+- **Minimum sample size**: 3 observations per group required for testing
 
 #### Events Analyzed
 
@@ -185,51 +164,14 @@ Results are saved to `2025_emotion_event_analysis.csv` with columns:
 
 ## GitHub Pages Website
 
-A static website showcasing all visualizations is available in the `docs/` directory.
-
-**To enable GitHub Pages:**
-1. Go to your repository settings on GitHub
-2. Navigate to "Pages" section
-3. Set source to "Deploy from a branch"
-4. Select branch: `main` and folder: `/docs`
-5. Save and wait for deployment
-
-The site will be available at: `https://<username>.github.io/<repository>/`
-
-**Website features:**
-- Clean, modern design with responsive layout
-- All 2025 and 2024 visualizations displayed
-- Organized by year and category (emotion, timeline, activities)
-- Placeholder descriptions for each visualization (ready for customization)
-- Automatic dark/light theme based on browser preference
+The site will be available at: `https://msbradshaw.github.io/DailyData/`
 
 ### Password Protection with StatiCrypt
 
 The GitHub Pages website is password-protected using [StatiCrypt](https://github.com/robinmoisson/staticrypt) to keep personal data private.
-
-**Installation:**
-```bash
-npm install -g staticrypt
-```
-
-**Encrypting the Website:**
-
-⚠️ **IMPORTANT**: The unencrypted `index.html` should NEVER be committed to the repository. Only commit the encrypted version.
-
-1. Create your unencrypted HTML file as `docs/index_unencrypted.html` (this file is gitignored)
-2. Encrypt it with your password:
-   ```bash
-   staticrypt docs/index_unencrypted.html -o docs/index.html --password YOUR_PASSWORD --remember --short
-   ```
-3. Only commit the encrypted `docs/index.html` file
 
 **Workflow for updating the website:**
 1. Make changes to `docs/index_unencrypted.html`
 2. Re-encrypt using the command above
 3. Commit only the encrypted `docs/index.html`
 4. Push to GitHub - the encrypted version will be deployed
-
-**StatiCrypt options used:**
-- `--password`: Sets the password for decryption
-- `--remember`: Enables "Remember me" checkbox to save password in browser
-- `--short`: Generates more compact output
