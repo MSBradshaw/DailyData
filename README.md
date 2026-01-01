@@ -202,3 +202,34 @@ The site will be available at: `https://<username>.github.io/<repository>/`
 - Organized by year and category (emotion, timeline, activities)
 - Placeholder descriptions for each visualization (ready for customization)
 - Automatic dark/light theme based on browser preference
+
+### Password Protection with StatiCrypt
+
+The GitHub Pages website is password-protected using [StatiCrypt](https://github.com/robinmoisson/staticrypt) to keep personal data private.
+
+**Installation:**
+```bash
+npm install -g staticrypt
+```
+
+**Encrypting the Website:**
+
+⚠️ **IMPORTANT**: The unencrypted `index.html` should NEVER be committed to the repository. Only commit the encrypted version.
+
+1. Create your unencrypted HTML file as `docs/index_unencrypted.html` (this file is gitignored)
+2. Encrypt it with your password:
+   ```bash
+   staticrypt docs/index_unencrypted.html -o docs/index.html --password YOUR_PASSWORD --remember --short
+   ```
+3. Only commit the encrypted `docs/index.html` file
+
+**Workflow for updating the website:**
+1. Make changes to `docs/index_unencrypted.html`
+2. Re-encrypt using the command above
+3. Commit only the encrypted `docs/index.html`
+4. Push to GitHub - the encrypted version will be deployed
+
+**StatiCrypt options used:**
+- `--password`: Sets the password for decryption
+- `--remember`: Enables "Remember me" checkbox to save password in browser
+- `--short`: Generates more compact output

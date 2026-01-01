@@ -42,5 +42,5 @@ Thumbs.db
 # Archive
 archive/
 
-# Keep unencrypted HTML private
-docs/index.unencrypted.html
+# Keep unencrypted HTML private - NEVER commit this file
+docs/index_unencrypted.html
