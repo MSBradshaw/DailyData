@@ -17,12 +17,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 # Get the directory where this script is located
 SCRIPT_DIR = Path(__file__).parent
 DATA_DIR = SCRIPT_DIR / 'data'
-OUTPUT_DIR = SCRIPT_DIR / 'outputs'
+OUTPUT_DIR = SCRIPT_DIR.parent / 'docs' / '2025' / 'outputs'
 
 from plotting_utils.emotion import plot_emotion_calendar
 from plotting_utils.activities import (
     plot_did_we_events_2025,
+    plot_did_we_events_2025_mobile,
     plot_person_specific_events_2025,
+    plot_person_specific_events_2025_mobile,
     create_2025_event_timeline
 )
 from plotting_utils.wordcloud_processing import export_wordcloud_words
@@ -35,8 +37,8 @@ def plot_emotion_calendars():
     print("EMOTION CALENDARS")
     print("="*80)
 
-    # Raw emotion calendar
-    print("\nGenerating raw emotion calendar...")
+    # Raw emotion calendar - Desktop
+    print("\nGenerating raw emotion calendar (desktop)...")
     plot_emotion_calendar(
         csv_path=str(DATA_DIR / '2025DataCollection.csv'),
         year=2025,
@@ -46,12 +48,29 @@ def plot_emotion_calendars():
         person2_name='Melanie',
         output_path=str(OUTPUT_DIR / 'calendar_emotion_together.png'),
         cache_path=str(OUTPUT_DIR / 'calendar_emotion_together.pkl'),
-        use_zscore=False
+        use_zscore=False,
+        mobile=False
     )
-    print("✓ Raw emotion calendar created")
+    print("✓ Raw emotion calendar (desktop) created")
 
-    # Z-score emotion calendar
-    print("\nGenerating Z-score emotion calendar...")
+    # Raw emotion calendar - Mobile
+    print("\nGenerating raw emotion calendar (mobile)...")
+    plot_emotion_calendar(
+        csv_path=str(DATA_DIR / '2025DataCollection.csv'),
+        year=2025,
+        person1_col='Emotion - Michael',
+        person2_col='Emotion - Melanie',
+        person1_name='Michael',
+        person2_name='Melanie',
+        output_path=str(OUTPUT_DIR / 'calendar_emotion_together_mobile.png'),
+        cache_path=str(OUTPUT_DIR / 'calendar_emotion_together.pkl'),
+        use_zscore=False,
+        mobile=True
+    )
+    print("✓ Raw emotion calendar (mobile) created")
+
+    # Z-score emotion calendar - Desktop
+    print("\nGenerating Z-score emotion calendar (desktop)...")
     plot_emotion_calendar(
         csv_path=str(DATA_DIR / '2025DataCollection.csv'),
         year=2025,
@@ -63,11 +82,30 @@ def plot_emotion_calendars():
         cache_path=str(OUTPUT_DIR / 'calendar_emotion_together.pkl'),
         use_zscore=True,
         export_weekday_stats=str(OUTPUT_DIR / 'weekday_emotion_together.csv'),
-        plot_weekday_heatmap_path=str(OUTPUT_DIR / 'weekday_emotion_heatmap_together.png')
+        plot_weekday_heatmap_path=str(OUTPUT_DIR / 'weekday_emotion_heatmap_together.png'),
+        mobile=False
     )
-    print("✓ Z-score emotion calendar created")
+    print("✓ Z-score emotion calendar (desktop) created")
     print("✓ Weekday statistics exported")
     print("✓ Weekday heatmap created")
+
+    # Z-score emotion calendar - Mobile
+    print("\nGenerating Z-score emotion calendar (mobile)...")
+    plot_emotion_calendar(
+        csv_path=str(DATA_DIR / '2025DataCollection.csv'),
+        year=2025,
+        person1_col='Emotion - Michael',
+        person2_col='Emotion - Melanie',
+        person1_name='Michael',
+        person2_name='Melanie',
+        output_path=str(OUTPUT_DIR / 'calendar_emotion_together_zscore_mobile.png'),
+        cache_path=str(OUTPUT_DIR / 'calendar_emotion_together.pkl'),
+        use_zscore=True,
+        plot_weekday_heatmap_path=str(OUTPUT_DIR / 'weekday_emotion_heatmap_together_mobile.png'),
+        mobile=True
+    )
+    print("✓ Z-score emotion calendar (mobile) created")
+    print("✓ Weekday heatmap (mobile) created")
 
 
 def plot_pie_charts():
@@ -76,19 +114,34 @@ def plot_pie_charts():
     print("PIE CHARTS")
     print("="*80)
 
-    # Shared events pie chart
-    print("\nGenerating shared events pie chart...")
+    # Shared events pie chart - Desktop
+    print("\nGenerating shared events pie chart (desktop)...")
     plot_did_we_events_2025(
         csv_path=str(DATA_DIR / '2025DataCollection.csv'),
         output_path=str(OUTPUT_DIR / 'pie_events_together.png')
     )
 
-    # Person-specific activity pie charts
-    print("\nGenerating person-specific activity pie charts...")
+    # Shared events pie chart - Mobile
+    print("\nGenerating shared events pie chart (mobile)...")
+    plot_did_we_events_2025_mobile(
+        csv_path=str(DATA_DIR / '2025DataCollection.csv'),
+        output_path=str(OUTPUT_DIR / 'pie_events_together_mobile.png')
+    )
+
+    # Person-specific activity pie charts - Desktop
+    print("\nGenerating person-specific activity pie charts (desktop)...")
     plot_person_specific_events_2025(
         csv_path=str(DATA_DIR / '2025DataCollection.csv'),
         output_path_michael=str(OUTPUT_DIR / 'pie_activities_michael.png'),
         output_path_melanie=str(OUTPUT_DIR / 'pie_activities_melanie.png')
+    )
+
+    # Person-specific activity pie charts - Mobile
+    print("\nGenerating person-specific activity pie charts (mobile)...")
+    plot_person_specific_events_2025_mobile(
+        csv_path=str(DATA_DIR / '2025DataCollection.csv'),
+        output_path_michael=str(OUTPUT_DIR / 'pie_activities_michael_mobile.png'),
+        output_path_melanie=str(OUTPUT_DIR / 'pie_activities_melanie_mobile.png')
     )
 
 
@@ -165,17 +218,23 @@ def main():
     print("\n" + "="*80)
     print("ALL VISUALIZATIONS COMPLETE")
     print("="*80)
-    print("\nOutputs saved to: 2025/outputs/")
+    print("\nOutputs saved to: docs/2025/outputs/")
     print("\nGenerated files:")
     print("  Emotion calendars:")
-    print("    - calendar_emotion_together.png")
-    print("    - calendar_emotion_together_zscore.png")
+    print("    - calendar_emotion_together.png (desktop)")
+    print("    - calendar_emotion_together_mobile.png (mobile)")
+    print("    - calendar_emotion_together_zscore.png (desktop)")
+    print("    - calendar_emotion_together_zscore_mobile.png (mobile)")
     print("    - weekday_emotion_together.csv")
-    print("    - weekday_emotion_heatmap_together.png")
+    print("    - weekday_emotion_heatmap_together.png (desktop)")
+    print("    - weekday_emotion_heatmap_together_mobile.png (mobile)")
     print("  Pie charts:")
-    print("    - pie_events_together.png")
-    print("    - pie_activities_michael.png")
-    print("    - pie_activities_melanie.png")
+    print("    - pie_events_together.png (desktop)")
+    print("    - pie_events_together_mobile.png (mobile)")
+    print("    - pie_activities_michael.png (desktop)")
+    print("    - pie_activities_michael_mobile.png (mobile)")
+    print("    - pie_activities_melanie.png (desktop)")
+    print("    - pie_activities_melanie_mobile.png (mobile)")
     print("  Word clouds:")
     print("    - wordcloud_best_together.txt")
     print("    - wordcloud_worst_together.txt")

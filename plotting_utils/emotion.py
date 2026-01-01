@@ -286,6 +286,209 @@ def create_split_calendar_heatmap(data, person1_name='Person 1', person2_name='P
     return fig, ax
 
 
+def create_split_calendar_heatmap_mobile(data, person1_name='Person 1', person2_name='Person 2',
+                                          title='How was your day on a scale of 1-10?',
+                                          use_zscore=False):
+    """
+    Create a mobile-friendly calendar heatmap with day-of-week columns and weeks as rows.
+
+    Args:
+        data: DataFrame with columns:
+            - date: datetime
+            - person1_score: int (1-10) or float (Z-score)
+            - person2_score: int (1-10) or float (Z-score)
+        person1_name: Name of first person (default: 'Person 1')
+        person2_name: Name of second person (default: 'Person 2')
+        title: Plot title (default: 'How was your day on a scale of 1-10?')
+        use_zscore: Use Z-score normalization instead of raw scores (default: False)
+
+    Returns:
+        tuple: (fig, ax) matplotlib figure and axis objects
+    """
+    # Ensure data is sorted by date
+    data = data.copy().sort_values('date')
+
+    # Calculate Z-scores if requested
+    if use_zscore:
+        data['person1_zscore'] = calculate_zscore(data['person1_score'])
+        data['person2_zscore'] = calculate_zscore(data['person2_score'])
+        score1_col = 'person1_zscore'
+        score2_col = 'person2_zscore'
+    else:
+        score1_col = 'person1_score'
+        score2_col = 'person2_score'
+
+    # Calculate week numbers and weekdays
+    data['weekday'] = data['date'].dt.weekday
+    data['week_num'] = data['date'].dt.isocalendar().week
+
+    # Get unique weeks in order
+    weeks = data['week_num'].unique()
+    n_weeks = len(weeks)
+
+    # Calculate figure size - mobile friendly (narrow width, tall height)
+    cell_size = 0.6
+    fig_width = 7 * cell_size + 2  # 7 days of week
+    fig_height = n_weeks * cell_size + 4  # Extra space for legend at bottom
+
+    # Create figure
+    fig = plt.figure(figsize=(fig_width, fig_height))
+
+    # Main plot takes most of the space, leave room at bottom for legend
+    ax = fig.add_axes([0.1, 0.14, 0.8, 0.80])
+
+    # Create colormaps based on mode
+    if use_zscore:
+        cmap1 = create_zscore_cmap()
+        cmap2 = create_zscore_cmap()
+    else:
+        cmap1 = create_diverging_cmap()
+        cmap2 = create_diverging_cmap()
+
+    # Plot each day as a split square
+    for _, row in data.iterrows():
+        week_idx = np.where(weeks == row['week_num'])[0][0]
+
+        # Swapped: weekday is now x, week is y
+        x = row['weekday']
+        y = week_idx
+
+        # Determine normalization function based on mode
+        if use_zscore:
+            norm_func = normalize_zscore
+        else:
+            norm_func = normalize_score
+
+        # Left triangle (Person 1)
+        triangle1 = Polygon(
+            [[x, y], [x+1, y], [x, y+1]],
+            facecolor=cmap1(norm_func(row[score1_col])),
+            edgecolor='white',
+            linewidth=0.5
+        )
+
+        # Right triangle (Person 2)
+        triangle2 = Polygon(
+            [[x+1, y], [x+1, y+1], [x, y+1]],
+            facecolor=cmap2(norm_func(row[score2_col])),
+            edgecolor='white',
+            linewidth=0.5
+        )
+
+        ax.add_patch(triangle1)
+        ax.add_patch(triangle2)
+
+    # Customize the plot
+    ax.set_xlim(0, 7)
+    ax.set_ylim(-0.1, n_weeks + 0.1)
+
+    # Set weekday labels on x-axis
+    weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    ax.set_xticks(range(7))
+    ax.set_xticklabels(weekdays, rotation=0, fontsize=14)
+    ax.xaxis.set_label_position('top')
+    ax.xaxis.tick_top()
+
+    # Add week/month labels on y-axis
+    # Group weeks by month for cleaner labels
+    week_to_month = {}
+    for _, row in data.iterrows():
+        week_num = row['week_num']
+        month = row['date'].strftime('%b')
+        if week_num not in week_to_month:
+            week_to_month[week_num] = month
+
+    # Create y-tick labels showing month for first week of each month
+    y_labels = []
+    prev_month = None
+    for week in weeks:
+        month = week_to_month[week]
+        if month != prev_month:
+            y_labels.append(f"{month}")
+            prev_month = month
+        else:
+            y_labels.append('')
+
+    ax.set_yticks(range(n_weeks))
+    ax.set_yticklabels(y_labels, fontsize=12)
+
+    # Invert y-axis so earliest weeks are at top
+    ax.invert_yaxis()
+
+    # Remove right and bottom borders
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+
+    # Add horizontal colorbar at bottom
+    cbar_ax = fig.add_axes([0.15, 0.10, 0.7, 0.03])
+    if use_zscore:
+        sm = plt.cm.ScalarMappable(cmap=cmap1, norm=plt.Normalize(-3, 3))
+        cbar = plt.colorbar(sm, cax=cbar_ax, orientation='horizontal')
+        cbar.set_ticks([-3, 0, 3])
+        cbar.set_ticklabels(['-3σ (Bad)', '0σ (Avg)', '+3σ (Great)'], fontsize=12)
+    else:
+        sm = plt.cm.ScalarMappable(cmap=cmap1, norm=plt.Normalize(1, 10))
+        cbar = plt.colorbar(sm, cax=cbar_ax, orientation='horizontal')
+        cbar.set_ticks([1, 5, 10])
+        cbar.set_ticklabels(['1 - Awful', '5 - Neutral', '10 - Amazing'], fontsize=12)
+
+    # Calculate averages for display
+    person1_raw_avg = data['person1_score'].dropna().mean()
+    person2_raw_avg = data['person2_score'].dropna().mean()
+
+    if use_zscore:
+        avg_label1 = f'{person1_name}: Avg={person1_raw_avg:.1f}'
+        avg_label2 = f'{person2_name}: Avg={person2_raw_avg:.1f}'
+    else:
+        person1_avg = person1_raw_avg
+        person2_avg = person2_raw_avg
+        avg_label1 = f'{person1_name}: Mean={person1_avg:.1f}'
+        avg_label2 = f'{person2_name}: Mean={person2_avg:.1f}'
+
+    # Create legend with split square at bottom
+    legend_ax = fig.add_axes([0.35, 0.02, 0.3, 0.08])
+    legend_ax.set_aspect('equal')
+    legend_ax.set_axis_off()
+
+    # Use appropriate normalization for legend colors
+    if use_zscore:
+        legend_norm = normalize_zscore
+        legend_val1 = 0  # Use neutral for Z-score
+        legend_val2 = 0
+    else:
+        legend_norm = normalize_score
+        legend_val1 = person1_raw_avg
+        legend_val2 = person2_raw_avg
+
+    triangle1 = Polygon(
+        [[0, 0], [1, 1], [0, 1]],
+        facecolor=cmap1(legend_norm(legend_val1)),
+        edgecolor='black',
+        linewidth=1
+    )
+    triangle2 = Polygon(
+        [[0, 0], [1, 0], [1, 1]],
+        facecolor=cmap2(legend_norm(legend_val2)),
+        edgecolor='black',
+        linewidth=1
+    )
+
+    legend_ax.add_patch(triangle1)
+    legend_ax.add_patch(triangle2)
+
+    # Add labels below the split square
+    legend_ax.text(0, -0.5, avg_label1, ha='center', va='top', fontsize=10)
+    legend_ax.text(1, -0.5, avg_label2, ha='center', va='top', fontsize=10)
+
+    legend_ax.set_xlim(-0.2, 1.2)
+    legend_ax.set_ylim(-0.8, 1.2)
+
+    # Set title
+    plt.suptitle(title, y=0.98, fontsize=18)
+
+    return fig, ax
+
+
 def plot_emotion_weekday_heatmap(data, person1_name='Person 1', person2_name='Person 2',
                                  output_path='emotion_weekday_heatmap.png'):
     """
@@ -374,6 +577,108 @@ def plot_emotion_weekday_heatmap(data, person1_name='Person 1', person2_name='Pe
     if output_path:
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         print(f'Saved weekday heatmap to: {output_path}')
+
+    return fig, ax
+
+
+def plot_emotion_weekday_heatmap_mobile(data, person1_name='Person 1', person2_name='Person 2',
+                                        output_path='emotion_weekday_heatmap_mobile.png'):
+    """
+    Create a mobile-friendly heatmap showing average emotion scores by day of week.
+    Uses Z-score coloring (relative to each person's average) but displays raw values.
+    Days are rows, people are columns.
+
+    Args:
+        data: DataFrame with columns: date, person1_score, person2_score
+        person1_name: Name of first person (default: 'Person 1')
+        person2_name: Name of second person (default: 'Person 2')
+        output_path: Path to save heatmap (default: 'emotion_weekday_heatmap_mobile.png')
+
+    Returns:
+        tuple: (fig, ax) matplotlib figure and axis objects
+    """
+    # Get the statistics
+    stats_df = export_emotion_by_weekday(data, person1_name, person2_name, output_path=None)
+
+    # Pivot to get person as rows, day as columns
+    pivot_df = stats_df.pivot(index='Person', columns='Day', values='Avg')
+
+    # Reorder to put Melanie first, then Michael
+    day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    day_abbrev = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    person_order = [person2_name, person1_name]  # Melanie first, then Michael
+
+    pivot_df = pivot_df.reindex(index=person_order, columns=day_order)
+
+    # Transpose for mobile (days as rows, people as columns)
+    pivot_df_t = pivot_df.T
+
+    # Calculate Z-scores for each person (column-wise after transpose)
+    pivot_zscore_t = pivot_df_t.copy()
+    for person in person_order:
+        person_values = pivot_df_t[person]
+        mean = person_values.mean()
+        std = person_values.std()
+        if std > 0:
+            pivot_zscore_t[person] = (person_values - mean) / std
+        else:
+            pivot_zscore_t[person] = 0
+
+    # Create figure - mobile dimensions (narrow and tall)
+    fig, ax = plt.subplots(figsize=(4, 8))
+
+    # Get the red-yellow-green colormap (same as Z-score)
+    cmap = create_zscore_cmap()
+
+    # Normalize Z-scores to color range
+    vmin, vmax = -2, 2  # Z-score range for coloring
+
+    # Create the heatmap using Z-scores for color
+    im = ax.imshow(pivot_zscore_t.values, cmap=cmap, aspect='auto', vmin=vmin, vmax=vmax)
+
+    # Set ticks and labels
+    ax.set_yticks(np.arange(len(day_abbrev)))
+    ax.set_xticks(np.arange(len(person_order)))
+    ax.set_yticklabels(day_abbrev, fontsize=12)
+    ax.set_xticklabels(person_order, fontsize=12)
+
+    # Put x labels on top
+    ax.xaxis.set_label_position('top')
+    ax.xaxis.tick_top()
+
+    # Add text annotations with values
+    for i in range(len(day_abbrev)):
+        for j in range(len(person_order)):
+            value = pivot_df_t.iloc[i, j]
+            if not pd.isna(value):
+                text = ax.text(j, i, f'{value:.1f}',
+                             ha='center', va='center', color='black', fontsize=14, fontweight='bold')
+
+    # Add horizontal colorbar at bottom
+    cbar = plt.colorbar(im, ax=ax, orientation='horizontal', pad=0.1)
+    cbar.set_label('Emotion Z-Score', fontsize=11)
+
+    # Set title
+    ax.set_title('Average Emotion by Day of Week', fontsize=14, pad=15)
+
+    # Remove ticks
+    ax.tick_params(which='both', length=0)
+
+    # Add grid
+    ax.set_xticks(np.arange(len(person_order)) - 0.5, minor=True)
+    ax.set_yticks(np.arange(len(day_abbrev)) - 0.5, minor=True)
+    ax.grid(which='minor', color='white', linestyle='-', linewidth=2)
+
+    # Remove right and bottom borders
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+
+    plt.tight_layout()
+
+    # Save if requested
+    if output_path:
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        print(f'Saved weekday heatmap (mobile) to: {output_path}')
 
     return fig, ax
 
@@ -520,7 +825,8 @@ def load_emotion_data(csv_path, year, person1_col, person2_col,
 def plot_emotion_calendar(csv_path, year, person1_col, person2_col,
                           person1_name='Person 1', person2_name='Person 2',
                           output_path=None, cache_path=None, use_zscore=False,
-                          export_weekday_stats=None, plot_weekday_heatmap_path=None):
+                          export_weekday_stats=None, plot_weekday_heatmap_path=None,
+                          mobile=False):
     """
     Complete workflow to load data and create emotion calendar heatmap.
 
@@ -536,6 +842,7 @@ def plot_emotion_calendar(csv_path, year, person1_col, person2_col,
         use_zscore: Use Z-score normalization instead of raw scores (default: False)
         export_weekday_stats: Optional path to export weekday statistics CSV (default: None)
         plot_weekday_heatmap_path: Optional path to save weekday heatmap plot (default: None)
+        mobile: Use mobile layout (day-of-week columns, weeks as rows) (default: False)
 
     Returns:
         tuple: (fig, ax) matplotlib figure and axis objects
@@ -549,7 +856,10 @@ def plot_emotion_calendar(csv_path, year, person1_col, person2_col,
 
     # Plot weekday heatmap if requested
     if plot_weekday_heatmap_path:
-        plot_emotion_weekday_heatmap(data, person1_name, person2_name, plot_weekday_heatmap_path)
+        if mobile:
+            plot_emotion_weekday_heatmap_mobile(data, person1_name, person2_name, plot_weekday_heatmap_path)
+        else:
+            plot_emotion_weekday_heatmap(data, person1_name, person2_name, plot_weekday_heatmap_path)
 
     # Determine title based on mode
     if use_zscore:
@@ -557,15 +867,19 @@ def plot_emotion_calendar(csv_path, year, person1_col, person2_col,
     else:
         title = 'How was your day on a scale of 1-10?'
 
-    # Create plot
-    fig, ax = create_split_calendar_heatmap(data, person1_name, person2_name,
-                                           title=title, use_zscore=use_zscore)
+    # Create plot using mobile or desktop layout
+    if mobile:
+        fig, ax = create_split_calendar_heatmap_mobile(data, person1_name, person2_name,
+                                                       title=title, use_zscore=use_zscore)
+    else:
+        fig, ax = create_split_calendar_heatmap(data, person1_name, person2_name,
+                                               title=title, use_zscore=use_zscore)
 
-    # Remove borders
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
-    ax.spines['left'].set_visible(False)
+        # Remove borders (only for desktop version)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+        ax.spines['left'].set_visible(False)
 
     # Save if requested
     if output_path:
