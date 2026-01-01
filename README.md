@@ -170,8 +170,55 @@ The site will be available at: `https://msbradshaw.github.io/DailyData/`
 
 The GitHub Pages website is password-protected using [StatiCrypt](https://github.com/robinmoisson/staticrypt) to keep personal data private.
 
+**Installation:**
+
+First, ensure you have Node.js and npm installed:
+```bash
+brew install node
+```
+
+Then install staticrypt globally:
+```bash
+npm install -g staticrypt
+```
+
+Verify installation:
+```bash
+staticrypt --version
+```
+
+**Encrypting the website:**
+
+First copy the unencrypted file, then encrypt the copy:
+```bash
+cp docs/index.unencrypted.html docs/index.html && \
+staticrypt docs/index.html --password <your pass word> --remember --short -d docs \
+  --template-instructions "The password is Michael's last name in all lower case letters." \
+  --template-title "Year of Data - Melanie & Michael"
+```
+
+**Testing locally:**
+
+To test the encrypted page locally before deploying (avoids CORS issues with file:// protocol):
+```bash
+cd docs
+python3 -m http.server 8000
+```
+
+Then open http://localhost:8000 in your browser and enter the password.
+
+Press Ctrl+C to stop the server when done.
+
 **Workflow for updating the website:**
-1. Make changes to `docs/index_unencrypted.html`
-2. Re-encrypt using the command above
-3. Commit only the encrypted `docs/index.html`
-4. Push to GitHub - the encrypted version will be deployed
+1. Make changes to `docs/index.unencrypted.html`
+2. Copy and encrypt using the command above
+3. (Optional) Test locally using the localhost instructions above
+4. Commit only the encrypted `docs/index.html` (NOT the unencrypted version)
+5. Push to GitHub - the encrypted version will be deployed
+
+**StatiCrypt options used:**
+- `--password`: Sets the password for decryption
+- `--remember`: Enables "Remember me" checkbox to save password in browser
+- `--short`: Generates more compact output
+- `--template-instructions`: Custom password hint text
+- `--template-title`: Page title for the password prompt
